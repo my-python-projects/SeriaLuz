@@ -3,15 +3,27 @@ from tkinter import ttk, scrolledtext, messagebox
 import serial
 import serial.tools.list_ports
 
-class SerialMonitorApp:
+class SeriaLuz:
     def __init__(self, root):
         self.root = root
         self.root.title("SeriaLuz - Monitor Serial")
-        self.root.resizable(width=0, height=0)
+
+        # Centralizar a janela
+        window_width = 500
+        window_height = 500
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        position_top = int(screen_height/2 - window_height/2)
+        position_right = int(screen_width/2 - window_width/2)
+        self.root.geometry(f'{window_width}x{window_height}+{position_right}+{position_top}')
 
         self.port = tk.StringVar()
         self.baudrate = tk.StringVar(value="9600")
         self.data_format = tk.StringVar(value="ASCII")
+        self.data_bits = tk.StringVar(value="8")
+        self.parity = tk.StringVar(value="None")
+        self.stop_bits = tk.StringVar(value="1")
+        self.flow_control = tk.StringVar(value="None")
         
         # Configurar elementos da interface
         self.create_widgets()
@@ -20,9 +32,23 @@ class SerialMonitorApp:
         self.ser = None
 
     def create_widgets(self):
-        # Frame de configurações
-        config_frame = ttk.LabelFrame(self.root, text="Configurações")
-        config_frame.grid(column=0, row=0, padx=10, pady=10)
+        notebook = ttk.Notebook(self.root)
+        notebook.pack(expand=1, fill="both")
+
+        tab1 = ttk.Frame(notebook)
+        tab2 = ttk.Frame(notebook)
+        tab3 = ttk.Frame(notebook)
+        notebook.add(tab1, text='Configuração')
+        notebook.add(tab2, text='Enviar/Receber')
+        notebook.add(tab3, text='Configurações Avançadas')
+
+        self.create_config_tab(tab1)
+        self.create_send_receive_tab(tab2)
+        self.create_advanced_settings_tab(tab3)
+
+    def create_config_tab(self, tab):
+        config_frame = ttk.LabelFrame(tab, text="Configurações")
+        config_frame.pack(padx=10, pady=10, fill="x")
 
         # Porta serial
         ttk.Label(config_frame, text="Porta:").grid(column=0, row=0, sticky=tk.W)
@@ -43,10 +69,11 @@ class SerialMonitorApp:
         # Botão de conectar
         self.connect_button = ttk.Button(config_frame, text="Conectar", command=self.toggle_connection)
         self.connect_button.grid(column=0, row=3, columnspan=2, pady=5)
-        
+    
+    def create_send_receive_tab(self, tab):
         # Frame de envio
-        send_frame = ttk.LabelFrame(self.root, text="Enviar Dados")
-        send_frame.grid(column=0, row=1, padx=10, pady=10)
+        send_frame = ttk.LabelFrame(tab, text="Enviar Dados")
+        send_frame.pack(padx=10, pady=10, fill="x")
 
         self.send_entry = ttk.Entry(send_frame, width=50)
         self.send_entry.grid(column=0, row=0, padx=5, pady=5)
@@ -54,12 +81,36 @@ class SerialMonitorApp:
         send_button.grid(column=1, row=0, padx=5, pady=5)
 
         # Frame de recebimento
-        receive_frame = ttk.LabelFrame(self.root, text="Receber Dados")
-        receive_frame.grid(column=0, row=2, padx=10, pady=10)
+        receive_frame = ttk.LabelFrame(tab, text="Receber Dados")
+        receive_frame.pack(padx=10, pady=10, fill="both", expand=True)
 
         self.receive_text = scrolledtext.ScrolledText(receive_frame, width=60, height=20, state='disabled')
-        self.receive_text.grid(column=0, row=0, padx=5, pady=5)
-        
+        self.receive_text.pack(padx=5, pady=5, fill="both", expand=True)
+
+    def create_advanced_settings_tab(self, tab):
+        advanced_frame = ttk.LabelFrame(tab, text="Configurações Avançadas")
+        advanced_frame.pack(padx=10, pady=10, fill="x")
+
+        # Data Bits
+        ttk.Label(advanced_frame, text="Bits de Dados:").grid(column=0, row=0, sticky=tk.W)
+        data_bits_menu = ttk.Combobox(advanced_frame, textvariable=self.data_bits, values=["5", "6", "7", "8"])
+        data_bits_menu.grid(column=1, row=0)
+
+        # Parity
+        ttk.Label(advanced_frame, text="Paridade:").grid(column=0, row=1, sticky=tk.W)
+        parity_menu = ttk.Combobox(advanced_frame, textvariable=self.parity, values=["None", "Even", "Odd", "Mark", "Space"])
+        parity_menu.grid(column=1, row=1)
+
+        # Stop Bits
+        ttk.Label(advanced_frame, text="Bits de Parada:").grid(column=0, row=2, sticky=tk.W)
+        stop_bits_menu = ttk.Combobox(advanced_frame, textvariable=self.stop_bits, values=["1", "1.5", "2"])
+        stop_bits_menu.grid(column=1, row=2)
+
+        # Flow Control
+        ttk.Label(advanced_frame, text="Controle de Fluxo:").grid(column=0, row=3, sticky=tk.W)
+        flow_control_menu = ttk.Combobox(advanced_frame, textvariable=self.flow_control, values=["None", "RTS/CTS", "XON/XOFF"])
+        flow_control_menu.grid(column=1, row=3)
+
     def get_serial_ports(self):
         ports = serial.tools.list_ports.comports()
         return [port.device for port in ports]
@@ -67,7 +118,15 @@ class SerialMonitorApp:
     def toggle_connection(self):
         if self.ser is None:
             try:
-                self.ser = serial.Serial(self.port.get(), self.baudrate.get())
+                self.ser = serial.Serial(
+                    port=self.port.get(),
+                    baudrate=int(self.baudrate.get()),
+                    bytesize=int(self.data_bits.get()),
+                    parity=self.parity.get()[0],  # 'N', 'E', 'O', 'M', 'S'
+                    stopbits=float(self.stop_bits.get()),
+                    xonxoff=(self.flow_control.get() == "XON/XOFF"),
+                    rtscts=(self.flow_control.get() == "RTS/CTS")
+                )
                 self.connect_button.config(text="Desconectar")
                 self.root.after(100, self.read_data)
             except Exception as e:
@@ -94,15 +153,23 @@ class SerialMonitorApp:
         if self.ser is not None:
             data = self.send_entry.get()
             if self.data_format.get() == "ASCII":
-                self.ser.write(data.encode('utf-8'))
+                encoded_data = data.encode('utf-8')
+                self.ser.write(encoded_data)
             elif self.data_format.get() == "Hexadecimal":
                 try:
-                    hex_data = bytes.fromhex(data)
-                    self.ser.write(hex_data)
+                    encoded_data = bytes.fromhex(data)
+                    self.ser.write(encoded_data)
                 except ValueError:
                     messagebox.showerror("Erro de Formato", "Formato hexadecimal inválido.")
+                    return
+        
+            # Exibir dados enviados na área de recebimento
+            self.receive_text.config(state='normal')
+            self.receive_text.insert(tk.END, f"Enviado: {data}\n")
+            self.receive_text.config(state='disabled')
+            self.send_entry.delete(0, tk.END)
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = SerialMonitorApp(root)
+    app = SeriaLuz(root)
     root.mainloop()

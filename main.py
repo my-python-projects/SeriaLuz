@@ -3,6 +3,8 @@ from tkinter import ttk, scrolledtext, messagebox
 from tkinter import PhotoImage, Toplevel, Label
 import serial
 import serial.tools.list_ports
+import json
+import os
 
 class SeriaLuz:
     def __init__(self, root):
@@ -10,8 +12,8 @@ class SeriaLuz:
         self.root.title("SeriaLuz - Monitor Serial")
 
         # Centralizar a janela
-        window_width = 500
-        window_height = 500
+        window_width = 600
+        window_height = 600
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         position_top = int(screen_height/2 - window_height/2)
@@ -25,12 +27,15 @@ class SeriaLuz:
         self.parity = tk.StringVar(value="None")
         self.stop_bits = tk.StringVar(value="1")
         self.flow_control = tk.StringVar(value="None")
-        
+
         # Configurar elementos da interface
         self.create_widgets()
 
         # Variáveis de estado
         self.ser = None
+
+        # Carregar configurações salvas
+        self.load_settings()
 
     def create_widgets(self):
         notebook = ttk.Notebook(self.root)
@@ -56,21 +61,24 @@ class SeriaLuz:
         ports = self.get_serial_ports()
         port_menu = ttk.Combobox(config_frame, textvariable=self.port, values=ports)
         port_menu.grid(column=1, row=0)
-        
+
         # Baudrate
         ttk.Label(config_frame, text="Baudrate:").grid(column=0, row=1, sticky=tk.W)
         baudrate_entry = ttk.Entry(config_frame, textvariable=self.baudrate)
         baudrate_entry.grid(column=1, row=1)
-        
+
         # Formato dos dados
         ttk.Label(config_frame, text="Formato dos Dados:").grid(column=0, row=2, sticky=tk.W)
         format_menu = ttk.Combobox(config_frame, textvariable=self.data_format, values=["ASCII", "Hexadecimal"])
         format_menu.grid(column=1, row=2)
 
-        # Botão de conectar
+        # Botões de conectar e salvar configurações
         self.connect_button = ttk.Button(config_frame, text="Conectar", command=self.toggle_connection)
-        self.connect_button.grid(column=0, row=3, columnspan=2, pady=5)
-    
+        self.connect_button.grid(column=0, row=3, pady=5)
+
+        save_button = ttk.Button(config_frame, text="Salvar Configurações", command=self.save_settings)
+        save_button.grid(column=1, row=3, pady=5)
+
     def create_send_receive_tab(self, tab):
         # Frame de envio
         send_frame = ttk.LabelFrame(tab, text="Enviar Dados")
@@ -87,6 +95,9 @@ class SeriaLuz:
 
         self.receive_text = scrolledtext.ScrolledText(receive_frame, width=60, height=20, state='disabled')
         self.receive_text.pack(padx=5, pady=5, fill="both", expand=True)
+
+        clear_button = ttk.Button(receive_frame, text="Limpar", command=self.clear_received_data)
+        clear_button.pack(padx=5, pady=5)
 
     def create_advanced_settings_tab(self, tab):
         advanced_frame = ttk.LabelFrame(tab, text="Configurações Avançadas")
@@ -150,7 +161,7 @@ class SeriaLuz:
             self.ser.close()
             self.ser = None
             self.connect_button.config(text="Conectar")
-        
+
     def read_data(self):
         if self.ser is not None and self.ser.in_waiting > 0:
             data = self.ser.read(self.ser.in_waiting)
@@ -158,7 +169,7 @@ class SeriaLuz:
                 data = data.decode('utf-8')
             elif self.data_format.get() == "Hexadecimal":
                 data = data.hex()
-            
+
             self.receive_text.config(state='normal')
             self.receive_text.insert(tk.END, data + '\n')
             self.receive_text.config(state='disabled')
@@ -177,12 +188,43 @@ class SeriaLuz:
                 except ValueError:
                     messagebox.showerror("Erro de Formato", "Formato hexadecimal inválido.")
                     return
-        
+
             # Exibir dados enviados na área de recebimento
             self.receive_text.config(state='normal')
             self.receive_text.insert(tk.END, f"Enviado: {data}\n")
             self.receive_text.config(state='disabled')
             self.send_entry.delete(0, tk.END)
+
+    def clear_received_data(self):
+        self.receive_text.config(state='normal')
+        self.receive_text.delete(1.0, tk.END)
+        self.receive_text.config(state='disabled')
+
+    def save_settings(self):
+        settings = {
+            "port": self.port.get(),
+            "baudrate": self.baudrate.get(),
+            "data_format": self.data_format.get(),
+            "data_bits": self.data_bits.get(),
+            "parity": self.parity.get(),
+            "stop_bits": self.stop_bits.get(),
+            "flow_control": self.flow_control.get()
+        }
+        with open("settings.json", "w") as f:
+            json.dump(settings, f)
+        messagebox.showinfo("Configurações", "Configurações salvas com sucesso.")
+
+    def load_settings(self):
+        if os.path.exists("settings.json"):
+            with open("settings.json", "r") as f:
+                settings = json.load(f)
+                self.port.set(settings.get("port", ""))
+                self.baudrate.set(settings.get("baudrate", "9600"))
+                self.data_format.set(settings.get("data_format", "ASCII"))
+                self.data_bits.set(settings.get("data_bits", "8"))
+                self.parity.set(settings.get("parity", "None"))
+                self.stop_bits.set(settings.get("stop_bits", "1"))
+                self.flow_control.set(settings.get("flow_control", "None"))
 
 if __name__ == "__main__":
     root = tk.Tk()

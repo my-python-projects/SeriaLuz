@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
+from tkinter import PhotoImage, Toplevel, Label
 import serial
 import serial.tools.list_ports
 
@@ -95,21 +96,35 @@ class SeriaLuz:
         ttk.Label(advanced_frame, text="Bits de Dados:").grid(column=0, row=0, sticky=tk.W)
         data_bits_menu = ttk.Combobox(advanced_frame, textvariable=self.data_bits, values=["5", "6", "7", "8"])
         data_bits_menu.grid(column=1, row=0)
+        self.create_info_icon(advanced_frame, "Bits de Dados:\nNúmero de bits usados para representar cada caractere (normalmente 8).").grid(column=2, row=0)
 
         # Parity
         ttk.Label(advanced_frame, text="Paridade:").grid(column=0, row=1, sticky=tk.W)
         parity_menu = ttk.Combobox(advanced_frame, textvariable=self.parity, values=["None", "Even", "Odd", "Mark", "Space"])
         parity_menu.grid(column=1, row=1)
+        self.create_info_icon(advanced_frame, "Paridade:\nMétodo de verificação de erros.\nNone: Sem paridade\nEven: Paridade par\nOdd: Paridade ímpar\nMark: Bit fixo em 1\nSpace: Bit fixo em 0").grid(column=2, row=1)
 
         # Stop Bits
         ttk.Label(advanced_frame, text="Bits de Parada:").grid(column=0, row=2, sticky=tk.W)
         stop_bits_menu = ttk.Combobox(advanced_frame, textvariable=self.stop_bits, values=["1", "1.5", "2"])
         stop_bits_menu.grid(column=1, row=2)
+        self.create_info_icon(advanced_frame, "Bits de Parada:\nNúmero de bits usados para indicar o fim de um byte (1, 1.5, 2).").grid(column=2, row=2)
 
         # Flow Control
         ttk.Label(advanced_frame, text="Controle de Fluxo:").grid(column=0, row=3, sticky=tk.W)
         flow_control_menu = ttk.Combobox(advanced_frame, textvariable=self.flow_control, values=["None", "RTS/CTS", "XON/XOFF"])
         flow_control_menu.grid(column=1, row=3)
+        self.create_info_icon(advanced_frame, "Controle de Fluxo:\nMétodo para controlar o fluxo de dados.\nNone: Sem controle de fluxo\nRTS/CTS: Controle de fluxo por hardware\nXON/XOFF: Controle de fluxo por software").grid(column=2, row=3)
+
+    def create_info_icon(self, parent, message):
+        def show_info(event):
+            top = Toplevel()
+            top.title("Informação")
+            Label(top, text=message, padx=10, pady=10).pack()
+            top.geometry(f'+{self.root.winfo_pointerx()}+{self.root.winfo_pointery()}')
+        info_icon = ttk.Label(parent, text="i", foreground="blue", cursor="hand2")
+        info_icon.bind("<Button-1>", show_info)
+        return info_icon
 
     def get_serial_ports(self):
         ports = serial.tools.list_ports.comports()

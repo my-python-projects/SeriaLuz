@@ -135,86 +135,87 @@ class SeriaLuz:
         flow_control_menu.grid(column=1, row=3, padx=5, pady=5, sticky=tk.W)
         self.create_info_icon(advanced_frame, "Controle de Fluxo:\nMétodo para controlar o fluxo de dados.\nNone: Sem controle de fluxo\nRTS/CTS: Controle de fluxo por hardware\nXON/XOFF: Controle de fluxo por software").grid(column=2, row=3, padx=5, pady=5)
 
-    def create_info_icon(self, parent, message):
-        def show_info(event):
-            top = Toplevel()
-            top.title("Informação")
-            Label(top, text=message, padx=10, pady=10).pack()
-            top.geometry(f'+{self.root.winfo_pointerx()}+{self.root.winfo_pointery()}')
-        info_icon = ttk.Label(parent, text="i", foreground="blue", cursor="hand2")
-        info_icon.bind("<Button-1>", show_info)
-        return info_icon
+    def create_info_icon(self, parent, tooltip_text):
+        icon = PhotoImage(file="info_icon.png")
+        info_button = ttk.Label(parent, image=icon)
+        info_button.image = icon
+        info_button.bind("<Enter>", lambda e: self.show_tooltip(info_button, tooltip_text))
+        info_button.bind("<Leave>", lambda e: self.hide_tooltip())
+        return info_button
+
+    def show_tooltip(self, widget, text):
+        x = widget.winfo_rootx() + 20
+        y = widget.winfo_rooty() + 20
+        self.tooltip = Toplevel(self.root)
+        self.tooltip.wm_overrideredirect(True)
+        self.tooltip.wm_geometry(f"+{x}+{y}")
+        label = Label(self.tooltip, text=text, background="#FFFFE0", relief='solid', borderwidth=1, justify='left')
+        label.pack(ipadx=1)
+
+    def hide_tooltip(self):
+        if self.tooltip:
+            self.tooltip.destroy()
+        self.tooltip = None
 
     def update_ports(self):
-        ports = self.get_serial_ports()
-        self.port_menu['values'] = ports
-        if ports:
-            self.port_menu.current(0)
-
-    def get_serial_ports(self):
         ports = serial.tools.list_ports.comports()
-        return [port.device for port in ports]
+        self.port_menu['values'] = [port.device for port in ports]
+        if ports:
+            self.port.set(ports[0].device)
 
     def toggle_connection(self):
-        if self.ser is None:
+        if self.ser and self.ser.is_open:
+            self.ser.close()
+            self.ser = None
+            self.status_label.config(text="Desconectado", foreground="red")
+            self.connect_button.config(text="Conectar")
+        else:
             try:
                 self.ser = serial.Serial(
                     port=self.port.get(),
                     baudrate=int(self.baudrate.get()),
                     bytesize=int(self.data_bits.get()),
-                    parity=self.parity.get()[0],  # 'N', 'E', 'O', 'M', 'S'
+                    parity=self.parity.get()[0],
                     stopbits=float(self.stop_bits.get()),
-                    xonxoff=(self.flow_control.get() == "XON/XOFF"),
-                    rtscts=(self.flow_control.get() == "RTS/CTS")
+                    xonxoff=self.flow_control.get() == "XON/XOFF",
+                    rtscts=self.flow_control.get() == "RTS/CTS"
                 )
-                self.connect_button.config(text="Desconectar")
                 self.status_label.config(text="Conectado", foreground="green")
-                self.root.after(100, self.read_data)
+                self.connect_button.config(text="Desconectar")
             except Exception as e:
-                messagebox.showerror("Erro de Conexão", str(e))
-        else:
-            self.ser.close()
-            self.ser = None
-            self.connect_button.config(text="Conectar")
-            self.status_label.config(text="Desconectado", foreground="red")
-
-    def read_data(self):
-        if self.ser is not None and self.ser.in_waiting > 0:
-            data = self.ser.read(self.ser.in_waiting)
-            if self.data_format.get() == "ASCII":
-                data = data.decode('utf-8')
-            elif self.data_format.get() == "Hexadecimal":
-                data = data.hex()
-
-            self.receive_text.config(state='normal')
-            self.receive_text.insert(tk.END, data + '\n')
-            self.receive_text.config(state='disabled')
-        self.root.after(100, self.read_data)
+                messagebox.showerror("Erro de Conexão", f"Não foi possível conectar à porta {self.port.get()}:\n{str(e)}")
 
     def send_data(self):
-        if self.ser is not None:
+        if self.ser and self.ser.is_open:
             data = self.send_entry.get()
             if self.data_format.get() == "ASCII":
-                encoded_data = data.encode('utf-8')
-                self.ser.write(encoded_data)
+                self.ser.write(data.encode('ascii'))
             elif self.data_format.get() == "Hexadecimal":
                 try:
-                    encoded_data = bytes.fromhex(data)
-                    self.ser.write(encoded_data)
+                    hex_data = bytes.fromhex(data)
+                    self.ser.write(hex_data)
                 except ValueError:
-                    messagebox.showerror("Erro de Formato", "Formato hexadecimal inválido.")
-                    return
-
-            # Exibir dados enviados na área de recebimento
-            self.receive_text.config(state='normal')
-            self.receive_text.insert(tk.END, f"Enviado: {data}\n")
-            self.receive_text.config(state='disabled')
+                    messagebox.showerror("Erro de Envio", "Dados em formato hexadecimal inválido.")
             self.send_entry.delete(0, tk.END)
+        else:
+            messagebox.showwarning("Conexão Inexistente", "Conecte-se a uma porta serial primeiro.")
 
     def clear_received_data(self):
-        self.receive_text.config(state='normal')
-        self.receive_text.delete(1.0, tk.END)
-        self.receive_text.config(state='disabled')
+        self.receive_text.configure(state='normal')
+        self.receive_text.delete('1.0', tk.END)
+        self.receive_text.configure(state='disabled')
+
+    def load_settings(self):
+        if os.path.exists("settings.json"):
+            with open("settings.json", "r") as file:
+                settings = json.load(file)
+                self.port.set(settings.get("port", ""))
+                self.baudrate.set(settings.get("baudrate", "9600"))
+                self.data_format.set(settings.get("data_format", "ASCII"))
+                self.data_bits.set(settings.get("data_bits", "8"))
+                self.parity.set(settings.get("parity", "None"))
+                self.stop_bits.set(settings.get("stop_bits", "1"))
+                self.flow_control.set(settings.get("flow_control", "None"))
 
     def save_settings(self):
         settings = {
@@ -226,23 +227,12 @@ class SeriaLuz:
             "stop_bits": self.stop_bits.get(),
             "flow_control": self.flow_control.get()
         }
-        with open("settings.json", "w") as f:
-            json.dump(settings, f)
-        messagebox.showinfo("Configurações", "Configurações salvas com sucesso.")
-
-    def load_settings(self):
-        if os.path.exists("settings.json"):
-            with open("settings.json", "r") as f:
-                settings = json.load(f)
-                self.port.set(settings.get("port", ""))
-                self.baudrate.set(settings.get("baudrate", "9600"))
-                self.data_format.set(settings.get("data_format", "ASCII"))
-                self.data_bits.set(settings.get("data_bits", "8"))
-                self.parity.set(settings.get("parity", "None"))
-                self.stop_bits.set(settings.get("stop_bits", "1"))
-                self.flow_control.set(settings.get("flow_control", "None"))
+        with open("settings.json", "w") as file:
+            json.dump(settings, file)
+        messagebox.showinfo("Configurações Salvas", "As configurações foram salvas com sucesso.")
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = SeriaLuz(root)
     root.mainloop()
+    

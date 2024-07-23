@@ -3,13 +3,15 @@ from tkinter import ttk, scrolledtext, messagebox
 import serial
 import serial.tools.list_ports
 
-class SeriaLuz:
+class SerialMonitorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("SeriaLuz - Monitor Serial")
-        
+        self.root.resizable(width=0, height=0)
+
         self.port = tk.StringVar()
         self.baudrate = tk.StringVar(value="9600")
+        self.data_format = tk.StringVar(value="ASCII")
         
         # Configurar elementos da interface
         self.create_widgets()
@@ -33,9 +35,14 @@ class SeriaLuz:
         baudrate_entry = ttk.Entry(config_frame, textvariable=self.baudrate)
         baudrate_entry.grid(column=1, row=1)
         
+        # Formato dos dados
+        ttk.Label(config_frame, text="Formato dos Dados:").grid(column=0, row=2, sticky=tk.W)
+        format_menu = ttk.Combobox(config_frame, textvariable=self.data_format, values=["ASCII", "Hexadecimal"])
+        format_menu.grid(column=1, row=2)
+
         # Botão de conectar
         self.connect_button = ttk.Button(config_frame, text="Conectar", command=self.toggle_connection)
-        self.connect_button.grid(column=0, row=2, columnspan=2, pady=5)
+        self.connect_button.grid(column=0, row=3, columnspan=2, pady=5)
         
         # Frame de envio
         send_frame = ttk.LabelFrame(self.root, text="Enviar Dados")
@@ -72,18 +79,30 @@ class SeriaLuz:
         
     def read_data(self):
         if self.ser is not None and self.ser.in_waiting > 0:
-            data = self.ser.read(self.ser.in_waiting).decode('utf-8')
+            data = self.ser.read(self.ser.in_waiting)
+            if self.data_format.get() == "ASCII":
+                data = data.decode('utf-8')
+            elif self.data_format.get() == "Hexadecimal":
+                data = data.hex()
+            
             self.receive_text.config(state='normal')
-            self.receive_text.insert(tk.END, data)
+            self.receive_text.insert(tk.END, data + '\n')
             self.receive_text.config(state='disabled')
         self.root.after(100, self.read_data)
 
     def send_data(self):
         if self.ser is not None:
             data = self.send_entry.get()
-            self.ser.write(data.encode('utf-8'))
+            if self.data_format.get() == "ASCII":
+                self.ser.write(data.encode('utf-8'))
+            elif self.data_format.get() == "Hexadecimal":
+                try:
+                    hex_data = bytes.fromhex(data)
+                    self.ser.write(hex_data)
+                except ValueError:
+                    messagebox.showerror("Erro de Formato", "Formato hexadecimal inválido.")
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = SeriaLuz(root)
+    app = SerialMonitorApp(root)
     root.mainloop()

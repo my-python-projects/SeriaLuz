@@ -12,8 +12,8 @@ class SeriaLuz:
         self.root.title("SeriaLuz - Monitor Serial")
 
         # Centralizar a janela
-        window_width = 600
-        window_height = 600
+        window_width = 550
+        window_height = 550
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         position_top = int(screen_height/2 - window_height/2)
@@ -54,35 +54,43 @@ class SeriaLuz:
 
     def create_config_tab(self, tab):
         config_frame = ttk.LabelFrame(tab, text="Configurações")
-        config_frame.pack(padx=10, pady=10, fill="x")
+        config_frame.pack(padx=10, pady=10, fill="x", expand=True)
 
         # Porta serial
-        ttk.Label(config_frame, text="Porta:").grid(column=0, row=0, sticky=tk.W)
-        ports = self.get_serial_ports()
-        port_menu = ttk.Combobox(config_frame, textvariable=self.port, values=ports)
-        port_menu.grid(column=1, row=0)
+        ttk.Label(config_frame, text="Porta:").grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
+        self.port_menu = ttk.Combobox(config_frame, textvariable=self.port)
+        self.port_menu.grid(column=1, row=0, padx=5, pady=5, sticky=tk.W)
+        self.update_ports()
+
+        # Botão para atualizar portas seriais
+        update_ports_button = ttk.Button(config_frame, text="Atualizar Portas", command=self.update_ports)
+        update_ports_button.grid(column=2, row=0, padx=5, pady=5)
 
         # Baudrate
-        ttk.Label(config_frame, text="Baudrate:").grid(column=0, row=1, sticky=tk.W)
+        ttk.Label(config_frame, text="Baudrate:").grid(column=0, row=1, sticky=tk.W, padx=5, pady=5)
         baudrate_entry = ttk.Entry(config_frame, textvariable=self.baudrate)
-        baudrate_entry.grid(column=1, row=1)
+        baudrate_entry.grid(column=1, row=1, padx=5, pady=5, sticky=tk.W)
 
         # Formato dos dados
-        ttk.Label(config_frame, text="Formato dos Dados:").grid(column=0, row=2, sticky=tk.W)
+        ttk.Label(config_frame, text="Formato dos Dados:").grid(column=0, row=2, sticky=tk.W, padx=5, pady=5)
         format_menu = ttk.Combobox(config_frame, textvariable=self.data_format, values=["ASCII", "Hexadecimal"])
-        format_menu.grid(column=1, row=2)
+        format_menu.grid(column=1, row=2, padx=5, pady=5, sticky=tk.W)
 
         # Botões de conectar e salvar configurações
         self.connect_button = ttk.Button(config_frame, text="Conectar", command=self.toggle_connection)
-        self.connect_button.grid(column=0, row=3, pady=5)
+        self.connect_button.grid(column=0, row=3, pady=10, padx=5, sticky=tk.W)
 
         save_button = ttk.Button(config_frame, text="Salvar Configurações", command=self.save_settings)
-        save_button.grid(column=1, row=3, pady=5)
+        save_button.grid(column=1, row=3, pady=10, padx=5, sticky=tk.W)
+
+        # Indicador de status de conexão
+        self.status_label = ttk.Label(config_frame, text="Desconectado", foreground="red")
+        self.status_label.grid(column=2, row=3, padx=5)
 
     def create_send_receive_tab(self, tab):
         # Frame de envio
         send_frame = ttk.LabelFrame(tab, text="Enviar Dados")
-        send_frame.pack(padx=10, pady=10, fill="x")
+        send_frame.pack(padx=10, pady=10, fill="x", expand=True)
 
         self.send_entry = ttk.Entry(send_frame, width=50)
         self.send_entry.grid(column=0, row=0, padx=5, pady=5)
@@ -101,31 +109,31 @@ class SeriaLuz:
 
     def create_advanced_settings_tab(self, tab):
         advanced_frame = ttk.LabelFrame(tab, text="Configurações Avançadas")
-        advanced_frame.pack(padx=10, pady=10, fill="x")
+        advanced_frame.pack(padx=10, pady=10, fill="x", expand=True)
 
         # Data Bits
-        ttk.Label(advanced_frame, text="Bits de Dados:").grid(column=0, row=0, sticky=tk.W)
+        ttk.Label(advanced_frame, text="Bits de Dados:").grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
         data_bits_menu = ttk.Combobox(advanced_frame, textvariable=self.data_bits, values=["5", "6", "7", "8"])
-        data_bits_menu.grid(column=1, row=0)
-        self.create_info_icon(advanced_frame, "Bits de Dados:\nNúmero de bits usados para representar cada caractere (normalmente 8).").grid(column=2, row=0)
+        data_bits_menu.grid(column=1, row=0, padx=5, pady=5, sticky=tk.W)
+        self.create_info_icon(advanced_frame, "Bits de Dados:\nNúmero de bits usados para representar cada caractere (normalmente 8).").grid(column=2, row=0, padx=5, pady=5)
 
         # Parity
-        ttk.Label(advanced_frame, text="Paridade:").grid(column=0, row=1, sticky=tk.W)
+        ttk.Label(advanced_frame, text="Paridade:").grid(column=0, row=1, sticky=tk.W, padx=5, pady=5)
         parity_menu = ttk.Combobox(advanced_frame, textvariable=self.parity, values=["None", "Even", "Odd", "Mark", "Space"])
-        parity_menu.grid(column=1, row=1)
-        self.create_info_icon(advanced_frame, "Paridade:\nMétodo de verificação de erros.\nNone: Sem paridade\nEven: Paridade par\nOdd: Paridade ímpar\nMark: Bit fixo em 1\nSpace: Bit fixo em 0").grid(column=2, row=1)
+        parity_menu.grid(column=1, row=1, padx=5, pady=5, sticky=tk.W)
+        self.create_info_icon(advanced_frame, "Paridade:\nMétodo de verificação de erros.\nNone: Sem paridade\nEven: Paridade par\nOdd: Paridade ímpar\nMark: Bit fixo em 1\nSpace: Bit fixo em 0").grid(column=2, row=1, padx=5, pady=5)
 
         # Stop Bits
-        ttk.Label(advanced_frame, text="Bits de Parada:").grid(column=0, row=2, sticky=tk.W)
+        ttk.Label(advanced_frame, text="Bits de Parada:").grid(column=0, row=2, sticky=tk.W, padx=5, pady=5)
         stop_bits_menu = ttk.Combobox(advanced_frame, textvariable=self.stop_bits, values=["1", "1.5", "2"])
-        stop_bits_menu.grid(column=1, row=2)
-        self.create_info_icon(advanced_frame, "Bits de Parada:\nNúmero de bits usados para indicar o fim de um byte (1, 1.5, 2).").grid(column=2, row=2)
+        stop_bits_menu.grid(column=1, row=2, padx=5, pady=5, sticky=tk.W)
+        self.create_info_icon(advanced_frame, "Bits de Parada:\nNúmero de bits usados para indicar o fim de um byte (1, 1.5, 2).").grid(column=2, row=2, padx=5, pady=5)
 
         # Flow Control
-        ttk.Label(advanced_frame, text="Controle de Fluxo:").grid(column=0, row=3, sticky=tk.W)
+        ttk.Label(advanced_frame, text="Controle de Fluxo:").grid(column=0, row=3, sticky=tk.W, padx=5, pady=5)
         flow_control_menu = ttk.Combobox(advanced_frame, textvariable=self.flow_control, values=["None", "RTS/CTS", "XON/XOFF"])
-        flow_control_menu.grid(column=1, row=3)
-        self.create_info_icon(advanced_frame, "Controle de Fluxo:\nMétodo para controlar o fluxo de dados.\nNone: Sem controle de fluxo\nRTS/CTS: Controle de fluxo por hardware\nXON/XOFF: Controle de fluxo por software").grid(column=2, row=3)
+        flow_control_menu.grid(column=1, row=3, padx=5, pady=5, sticky=tk.W)
+        self.create_info_icon(advanced_frame, "Controle de Fluxo:\nMétodo para controlar o fluxo de dados.\nNone: Sem controle de fluxo\nRTS/CTS: Controle de fluxo por hardware\nXON/XOFF: Controle de fluxo por software").grid(column=2, row=3, padx=5, pady=5)
 
     def create_info_icon(self, parent, message):
         def show_info(event):
@@ -136,6 +144,12 @@ class SeriaLuz:
         info_icon = ttk.Label(parent, text="i", foreground="blue", cursor="hand2")
         info_icon.bind("<Button-1>", show_info)
         return info_icon
+
+    def update_ports(self):
+        ports = self.get_serial_ports()
+        self.port_menu['values'] = ports
+        if ports:
+            self.port_menu.current(0)
 
     def get_serial_ports(self):
         ports = serial.tools.list_ports.comports()
@@ -154,6 +168,7 @@ class SeriaLuz:
                     rtscts=(self.flow_control.get() == "RTS/CTS")
                 )
                 self.connect_button.config(text="Desconectar")
+                self.status_label.config(text="Conectado", foreground="green")
                 self.root.after(100, self.read_data)
             except Exception as e:
                 messagebox.showerror("Erro de Conexão", str(e))
@@ -161,6 +176,7 @@ class SeriaLuz:
             self.ser.close()
             self.ser = None
             self.connect_button.config(text="Conectar")
+            self.status_label.config(text="Desconectado", foreground="red")
 
     def read_data(self):
         if self.ser is not None and self.ser.in_waiting > 0:

@@ -5,6 +5,9 @@ import serial
 import serial.tools.list_ports
 import json
 import os
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.animation import FuncAnimation
 
 class SeriaLuz:
     def __init__(self, root):
@@ -12,8 +15,8 @@ class SeriaLuz:
         self.root.title("SeriaLuz - Monitor Serial")
 
         # Centralizar a janela
-        window_width = 550
-        window_height = 550
+        window_width = 600
+        window_height = 600
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         position_top = int(screen_height/2 - window_height/2)
@@ -33,6 +36,10 @@ class SeriaLuz:
 
         # Variáveis de estado
         self.ser = None
+
+        # Dados para o gráfico
+        self.data_x = []
+        self.data_y = []
 
         # Carregar configurações salvas
         self.load_settings()
@@ -101,11 +108,22 @@ class SeriaLuz:
         receive_frame = ttk.LabelFrame(tab, text="Receber Dados")
         receive_frame.pack(padx=10, pady=10, fill="both", expand=True)
 
-        self.receive_text = scrolledtext.ScrolledText(receive_frame, width=60, height=20, state='disabled')
+        self.receive_text = scrolledtext.ScrolledText(receive_frame, width=60, height=10, state='disabled')
         self.receive_text.pack(padx=5, pady=5, fill="both", expand=True)
 
         clear_button = ttk.Button(receive_frame, text="Limpar", command=self.clear_received_data)
         clear_button.pack(padx=5, pady=5)
+
+        # Frame do gráfico
+        graph_frame = ttk.LabelFrame(tab, text="Gráfico em Tempo Real")
+        graph_frame.pack(padx=10, pady=10, fill="both", expand=True)
+
+        self.fig, self.ax = plt.subplots()
+        self.line, = self.ax.plot([], [], 'r-')
+        self.canvas = FigureCanvasTkAgg(self.fig, master=graph_frame)
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        self.ani = FuncAnimation(self.fig, self.update_graph, init_func=self.init_graph, blit=True, cache_frame_data=False)
 
     def create_advanced_settings_tab(self, tab):
         advanced_frame = ttk.LabelFrame(tab, text="Configurações Avançadas")
@@ -231,8 +249,27 @@ class SeriaLuz:
             json.dump(settings, file)
         messagebox.showinfo("Configurações Salvas", "As configurações foram salvas com sucesso.")
 
+    def init_graph(self):
+        self.ax.set_xlim(0, 100)
+        self.ax.set_ylim(0, 1024)
+        self.line.set_data([], [])
+        return self.line,
+
+    def update_graph(self, frame):
+        if self.ser and self.ser.is_open:
+            line = self.ser.readline().decode('ascii').strip()
+            if line.isdigit():
+                self.data_y.append(int(line))
+                self.data_x.append(len(self.data_y))
+                if len(self.data_x) > 100:
+                    self.data_x.pop(0)
+                    self.data_y.pop(0)
+                self.line.set_data(self.data_x, self.data_y)
+                self.ax.set_xlim(min(self.data_x), max(self.data_x) + 1)
+        return self.line,
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = SeriaLuz(root)
+    root.protocol("WM_DELETE_WINDOW", root.quit)  # Ensure the serial port is closed on exit
     root.mainloop()
-    

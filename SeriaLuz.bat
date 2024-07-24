@@ -15,6 +15,8 @@ python -m pip install --upgrade pip
 
 pip install pyserial
 
+pip install matplotlib
+
 python main.py
 
 endlocal

@@ -2,3 +2,4 @@ venv/*
 settings.json
 lang.json
 *.log
+/__pycache__

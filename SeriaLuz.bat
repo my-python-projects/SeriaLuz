@@ -17,6 +17,8 @@ pip install pyserial
 
 pip install matplotlib
 
+pip install pymodbus
+
 python main.py
 
 endlocal

@@ -31,5 +31,20 @@
     "no_connection" : "Sin conexión",
     "connect_port_first": "Conéctese primero a un puerto serie.",
     "save_config" : "Configuraciones guardadas",
-    "settings_saved": "La configuración se ha guardado correctamente."
+    "settings_saved": "La configuración se ha guardado correctamente.",
+    "contact_simulate": "Simulador de contactores",
+    "score": "Puntaje:",
+    "start": "Comenzar",
+    "stop": "Parar",
+    "reset": "Reiniciar",
+    "reconnect": "Reconectar",
+    "exit": "Salir",
+    "resistor": "Resistor",
+    "connections": "Conexiones",
+    "connect_modbus": "Conexión Modbus establecida.",
+    "error_connect_modbus": "Error al conectarse a Modbus.",
+    "error_connect_port": "Error al conectar al puerto serie: ",
+    "error_read_read_modbus": "Error al leer el registro Modbus.",
+    "error_read_modbus": "Error al leer Modbus: ",
+    "protocol": "Protocolo:"
 }

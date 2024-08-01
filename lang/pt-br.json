@@ -31,5 +31,21 @@
     "no_connection" : "Conexão Inexistente",
     "connect_port_first": "Conecte-se a uma porta serial primeiro.",
     "save_config" : "Configurações Salvas",
-    "settings_saved": "As configurações foram salvas com sucesso."
+    "settings_saved": "As configurações foram salvas com sucesso.",
+    "contact_simulate": "Simulador de Contator",
+    "score": "Contagem:",
+    "start": "Iniciar",
+    "stop": "Parar",
+    "reset": "Resetar",
+    "reconnect": "Reconectar",
+    "exit": "Sair",
+    "resistor": "Resistor",
+    "connections": "Conexões",
+    "connect_modbus": "Conexão Modbus estabelecida.",
+    "error_connect_modbus": "Erro ao conectar ao Modbus.",
+    "error_connect_port": "Erro ao conectar à porta serial: ",
+    "error_read_read_modbus": "Erro ao ler o registro Modbus.",
+    "error_read_modbus": "Erro na leitura do Modbus: ",
+    "protocol": "Protocolo:"
+
 }

@@ -31,5 +31,20 @@
     "no_connection" : "No Connection",
     "connect_port_first": "Connect to a serial port first.",
     "save_config" : "Saved settings",
-    "settings_saved": "The settings have been saved successfully."
+    "settings_saved": "The settings have been saved successfully.",
+    "contact_simulate": "Contactor Simulator",
+    "score": "Score:",
+    "start": "Start",
+    "stop": "Stop",
+    "reset": "Reset",
+    "reconnect": "Reconnect",
+    "exit": "Exit",
+    "resistor": "Resistor",
+    "connections": "Connections",
+    "connect_modbus": "Modbus connection established.",
+    "error_connect_modbus": "Error connecting to Modbus.",
+    "error_connect_port": "Error connecting to serial port:",
+    "error_read_read_modbus": "Error reading the Modbus register.",
+    "error_read_modbus": "Error reading Modbus: ",
+    "protocol": "Protocol:"
 }
